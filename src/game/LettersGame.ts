@@ -8,6 +8,10 @@ export default class LettersGame {
     private _gameWorld: Container;
     private _bgGraphics!: Graphics;
     private _pool: any;
+    /**
+     * Letters in play.
+     */
+    private _letters: Letter[];
 
     constructor(app: Application) {
         this._app = app;
@@ -24,18 +28,25 @@ export default class LettersGame {
         // Register keyboard events.
         Keyboard.events.on("pressed", null, this.onKeyPressed);
 
+        // Init the pool of letters.
+        this._pool = LetterPool.getInstance();
+        this._letters = [];
         this.dev();
     }
 
     dev() {
-        let letter = new Letter("A", this._gameWorld);
-        letter.setXY(400, 400);
+        for (let i = 0; i < 10; i++) {
+            const letter: Letter = this._pool.pop();
+            letter.setXY(100 + 100 * i, 100 + 80 * i);
+            letter.addToContainer(this._gameWorld);
+            letter.letter = this._getRandomLetter();
 
-        let letter2 = new Letter("Z", this._gameWorld, LetterTints.gold);
-        letter2.setXY(700, 300);
+            letter.setVelAndAcc(0, 0, 0, 0.02);
+            letter.angularMomentum = 15 / Math.PI / 180;
 
-        // Build a pool of letters.
-        const pool = LetterPool.getInstance();
+            // Add the letter to the array of active (in use) letters.
+            this._letters.push(letter);
+        }
     }
 
     showStartMenu() {}
@@ -62,11 +73,23 @@ export default class LettersGame {
     }
 
     update(delta: number) {
+        // Update all letters in play.
+        this._letters.forEach((letter: Letter, index: number) => {
+            letter.update(delta);
+        });
         Keyboard.update();
     }
 
     onKeyPressed(key_str_code: any, event: any) {
         console.log("onKeyPressed: ", key_str_code, ", keyCode: " + event.keyCode);
+    }
+
+    checkLettersForKey(key_str_code: string) {}
+
+    //// HELPERS.
+
+    private _getRandomLetter(): string {
+        return ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
     }
 }
 
@@ -74,3 +97,32 @@ export const LOGICAL_GAME_SPACE = {
     width: 1080,
     height: 1080,
 };
+
+export const ALPHABET = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+];

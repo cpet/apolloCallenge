@@ -5,16 +5,18 @@ import { BitmapText, Container, Point } from "pixi.js";
  */
 export default class Letter {
     bt: BitmapText;
+    points: number = 1;
 
     private _tint!: number;
 
     private _isMatched: boolean = false;
-    private _container!: Container;
+    private _container!: Container | null | undefined;
     private _keyCode: string;
 
     //// Basic physics.
     vel: Point;
     acc: Point;
+    angularMomentum: number = 0;
 
     constructor(letter: string, container?: Container, tint?: number) {
         this.bt = new BitmapText(letter, { fontName: "Cooper Black", fontSize: 180 });
@@ -34,13 +36,38 @@ export default class Letter {
         this.acc = new Point();
     }
 
-    update(dt: number) {}
+    update(dt: number) {
+        this.bt.x += this.vel.x * dt;
+        this.bt.y += this.vel.y * dt;
 
-    //// HELPERS
+        this.vel.x += this.acc.x * dt;
+        this.vel.y += this.acc.y * dt;
+
+        this.bt.rotation += this.angularMomentum * dt;
+    }
+
+    //// HELPERS.
 
     addToContainer(container: Container) {
         this._container = container;
         this._container.addChild(this.bt);
+    }
+
+    removeFromParent() {
+        if (this._container) {
+            this._container.removeChild(this.bt);
+            return;
+        }
+
+        this._container = null;
+    }
+
+    reset() {
+        // Sets all to 0.
+        this.setVelAndAcc();
+        this.bt.rotation = 0;
+        this.points = 1;
+        this.tint = LetterTints.regular;
     }
 
     //// IS?
@@ -86,7 +113,13 @@ export default class Letter {
         return this;
     }
 
-    reset() {}
+    setVelAndAcc(vel_x = 0, vel_y = 0, acc_x = 0, acc_y = 0) {
+        this.vel.x = vel_x;
+        this.vel.y = vel_y;
+
+        this.acc.x = acc_x;
+        this.acc.y = acc_y;
+    }
 }
 
 // export enum LetterTypes {
