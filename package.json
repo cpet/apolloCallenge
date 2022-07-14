@@ -1,7 +1,7 @@
 {
     "name": "pixi-typescript-boilerplate",
     "version": "1.0.0",
-    "description": "pixi.js typescript boilerplate webpack",
+    "description": "Apollo challenge",
     "browserslist": "> 0.25%, not dead",
     "scripts": {
         "webpack": "webpack",
@@ -22,13 +22,12 @@
         "code-style-check": "npm run lint-check && npm run prettier:check",
         "prepare": "husky install"
     },
-    "author": "jkanchelov",
+    "author": "chrisp83",
     "license": "MIT",
     "dependencies": {
-        "@pixi/layers": "^1.0.11",
         "core-js": "^3.20.3",
-        "pixi-spine": "^3.0.13",
         "pixi.js": "^6.2.2",
+        "pixi.js-keyboard": "^1.1.6",
         "regenerator-runtime": "^0.13.9"
     },
     "devDependencies": {
