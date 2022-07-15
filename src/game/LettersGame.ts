@@ -4,15 +4,15 @@ import Letter, { LetterTints, LetterTypes } from "./Letter";
 import LetterPool from "./LetterPool";
 const Keyboard = require("pixi.js-keyboard");
 import { gsap } from "gsap";
-import StartMenu, { START_MENU_EVENTS } from "./screen/StartMenu";
-import PointsMenu, { POINTS_MENU_EVENTS } from "./screen/PointsMenu";
+import StartMenu from "./screen/StartMenu";
+import PointsMenu from "./screen/PointsMenu";
 
 export default class LettersGame {
     private _app: Application;
     private _gameWorld: Container;
 
-    private _startMenu: StartMenu;
-    private _pointsMenu: PointsMenu;
+    private _startMenu!: StartMenu;
+    private _pointsMenu!: PointsMenu;
 
     private _bgGraphics!: Graphics;
     private _pool: LetterPool;
@@ -26,7 +26,7 @@ export default class LettersGame {
     /**
      * Penalty for wrong keys. Anty-keyboard mashing.
      */
-    private _wrongPoints: number = 0;
+    private _faultPoints: number = 0;
 
     /**
      * Spawn every time in seconds.
@@ -37,11 +37,11 @@ export default class LettersGame {
     /**
      * Max wave per session;
      */
-    private _numWaves: number = 16;
+    private _numTotalWaves: number = 16;
     /**
-     * Current wave.
+     * Current number of waves left to spawn.
      */
-    private _currentWaveNum: number = 0;
+    private _numWavesLeft: number = 16;
 
     /**
      * Tracks letters that need to be removed from the game. Internal use.
@@ -54,6 +54,7 @@ export default class LettersGame {
         this._app = app;
         this._gameWorld = new Container();
         this.initStartMenu();
+        this.initPointsMenu();
 
         this._app.stage.addChild(this._gameWorld);
 
@@ -70,31 +71,24 @@ export default class LettersGame {
         // Init the pool of letters.
         this._pool = LetterPool.getInstance();
         this._letters = [];
-        this.dev();
-    }
 
-    dev() {
-        // this.startGame();
         this.showStartMenu();
+
+        // Add the game update to the PIXI app ticker.
+        this._app.ticker.add((delta) => this.update(delta));
     }
 
     startGame() {
-        // Add the game update to the PIXI app ticker.
-        this._app.ticker.add((delta) => this.update(delta));
-
         // Start the letter wave spawner.
-        this.spawnLetterWave();
         this._gameIsRunning = true;
-
-        this._app.stage.addChild(this._gameWorld);
-        this._gameWorld.visible = true;
-
-        this._app.stage.removeChild(this._startMenu);
-        this._startMenu.visible = false;
+        this.reset();
+        this.showGame();
+        this.spawnLetterWave();
     }
 
     stopGame() {
         this.clearLetters();
+        this._gameIsRunning = false;
     }
 
     spawnLetterWave() {
@@ -136,14 +130,18 @@ export default class LettersGame {
             // Add the letter to the array of active (in use) letters.
             this._letters.push(letter);
         }
+
         // Check if we need to spawn more letters.
-        if (this._currentWaveNum < this._numWaves && this._gameIsRunning) {
-            this._currentWaveNum++;
+        if (this._numWavesLeft > 0 && this._gameIsRunning) {
+            this._numWavesLeft--;
             gsap.delayedCall(this._spawnEvery, () => {
                 this.spawnLetterWave();
             });
         } else {
-            // TODO: show points.
+            gsap.delayedCall(5, () => {
+                this.stopGame();
+                this.showPointsMenu();
+            });
         }
     }
 
@@ -163,6 +161,7 @@ export default class LettersGame {
         }
 
         this._startMenu.resize(new_width, new_height);
+        this._pointsMenu.resize(new_width, new_height);
     }
 
     update(delta: number) {
@@ -186,8 +185,13 @@ export default class LettersGame {
         }
     }
 
+    /**
+     * Keyboard press handler.
+     * @param key_str_code
+     * @param event
+     */
     onKeyPressed(key_str_code: any, event: any) {
-        console.log("onKeyPressed: ", key_str_code, ", keyCode: " + event.keyCode);
+        // console.log("onKeyPressed: ", key_str_code, ", keyCode: " + event.keyCode);
         this.checkLetterKey(key_str_code);
     }
 
@@ -207,8 +211,8 @@ export default class LettersGame {
             }
         }
 
-        console.log("checkLetterKey: ", key_str_code, ", was not found in the active game letters.");
-        this._wrongPoints += 3;
+        // console.log("checkLetterKey: ", key_str_code, ", was not found in the active game letters.");
+        this._faultPoints += 3;
     }
 
     /**
@@ -232,10 +236,10 @@ export default class LettersGame {
         letter.doMatchedAnimation();
         if (letter.getType() == LetterTypes.normal) {
             this._normalPoints += letter.points;
-            console.log("Scored Normal Points: ", letter.points, ", normal points: ", this._normalPoints);
+            // console.log("Scored Normal Points: ", letter.points, ", normal points: ", this._normalPoints);
         } else {
             this._goldenPoints += letter.points * 2;
-            console.log("Scored Golden Points: ", letter.points * 2, ", golden points: ", this._goldenPoints);
+            // console.log("Scored Golden Points: ", letter.points * 2, ", golden points: ", this._goldenPoints);
         }
     }
 
@@ -251,8 +255,9 @@ export default class LettersGame {
     reset() {
         this._normalPoints = 0;
         this._goldenPoints = 0;
+        this._faultPoints = 0;
 
-        this._gameIsRunning = false;
+        this._numWavesLeft = this._numTotalWaves;
     }
 
     //// MENUS.
@@ -261,18 +266,50 @@ export default class LettersGame {
         this._startMenu = new StartMenu();
         this._startMenu.startBtn.on("pointerdown", () => {
             this.startGame();
-            this._startMenu.visible = false;
         });
     }
 
     showStartMenu() {
-        this._gameWorld.visible = false;
-        this._startMenu.visible = true;
         this._app.stage.addChild(this._startMenu);
+        this._startMenu.visible = true;
+
         this._app.stage.removeChild(this._gameWorld);
+        this._gameWorld.visible = false;
+
+        this._app.stage.removeChild(this._pointsMenu);
+        this._pointsMenu.visible = false;
     }
 
-    showPointsMenu() {}
+    initPointsMenu() {
+        this._pointsMenu = new PointsMenu();
+        this._pointsMenu.startBtn.on("pointerdown", () => {
+            this.startGame();
+        });
+    }
+
+    showPointsMenu() {
+        this._app.stage.removeChild(this._startMenu);
+        this._startMenu.visible = false;
+
+        this._app.stage.removeChild(this._gameWorld);
+        this._gameWorld.visible = false;
+
+        this._app.stage.addChild(this._pointsMenu);
+        this._pointsMenu.visible = true;
+
+        this._pointsMenu.updatePoints(this._normalPoints, this._goldenPoints, this._faultPoints);
+    }
+
+    showGame() {
+        this._app.stage.removeChild(this._startMenu);
+        this._startMenu.visible = false;
+
+        this._app.stage.addChild(this._gameWorld);
+        this._gameWorld.visible = true;
+
+        this._app.stage.removeChild(this._pointsMenu);
+        this._pointsMenu.visible = false;
+    }
 
     //// HELPERS.
 

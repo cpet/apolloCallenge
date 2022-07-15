@@ -7,7 +7,11 @@ export default class StartMenu extends Container {
     constructor() {
         super();
 
-        this.startBtn = new BitmapText("( START )", { fontName: "ETH_B_gofa", fontSize: 120, align: "center" });
+        this.startBtn = new BitmapText("( START )", {
+            fontName: "ETH_B_gofa",
+            fontSize: 120,
+            align: "center",
+        });
         this.startBtn.interactive = true;
         this.startBtn.buttonMode = true;
 
