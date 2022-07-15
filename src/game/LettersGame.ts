@@ -4,12 +4,15 @@ import Letter, { LetterTints, LetterTypes } from "./Letter";
 import LetterPool from "./LetterPool";
 const Keyboard = require("pixi.js-keyboard");
 import { gsap } from "gsap";
+import StartMenu, { START_MENU_EVENTS } from "./screen/StartMenu";
+import PointsMenu, { POINTS_MENU_EVENTS } from "./screen/PointsMenu";
 
 export default class LettersGame {
     private _app: Application;
     private _gameWorld: Container;
-    private _startCont: Container;
-    private _pointsCont: Container;
+
+    private _startMenu: StartMenu;
+    private _pointsMenu: PointsMenu;
 
     private _bgGraphics!: Graphics;
     private _pool: LetterPool;
@@ -41,7 +44,7 @@ export default class LettersGame {
     private _currentWaveNum: number = 0;
 
     /**
-     * Tracks letters that need to be removed from the game.
+     * Tracks letters that need to be removed from the game. Internal use.
      */
     private _toBeRemoved: Letter[] = [];
 
@@ -50,12 +53,9 @@ export default class LettersGame {
     constructor(app: Application) {
         this._app = app;
         this._gameWorld = new Container();
-        this._startCont = new Container();
-        this._pointsCont = new Container();
+        this.initStartMenu();
 
         this._app.stage.addChild(this._gameWorld);
-        this._app.stage.addChild(this._startCont);
-        this._app.stage.addChild(this._pointsCont);
 
         // Game world background.
         this._bgGraphics = new Graphics();
@@ -74,7 +74,8 @@ export default class LettersGame {
     }
 
     dev() {
-        this.startGame();
+        // this.startGame();
+        this.showStartMenu();
     }
 
     startGame() {
@@ -83,8 +84,13 @@ export default class LettersGame {
 
         // Start the letter wave spawner.
         this.spawnLetterWave();
-
         this._gameIsRunning = true;
+
+        this._app.stage.addChild(this._gameWorld);
+        this._gameWorld.visible = true;
+
+        this._app.stage.removeChild(this._startMenu);
+        this._startMenu.visible = false;
     }
 
     stopGame() {
@@ -132,6 +138,7 @@ export default class LettersGame {
         }
         // Check if we need to spawn more letters.
         if (this._currentWaveNum < this._numWaves && this._gameIsRunning) {
+            this._currentWaveNum++;
             gsap.delayedCall(this._spawnEvery, () => {
                 this.spawnLetterWave();
             });
@@ -154,6 +161,8 @@ export default class LettersGame {
         if (new_game_width < new_width) {
             this._gameWorld.x = (new_width - new_game_width) * 0.5;
         }
+
+        this._startMenu.resize(new_width, new_height);
     }
 
     update(delta: number) {
@@ -248,7 +257,20 @@ export default class LettersGame {
 
     //// MENUS.
 
-    showStartMenu() {}
+    initStartMenu() {
+        this._startMenu = new StartMenu();
+        this._startMenu.startBtn.on("pointerdown", () => {
+            this.startGame();
+            this._startMenu.visible = false;
+        });
+    }
+
+    showStartMenu() {
+        this._gameWorld.visible = false;
+        this._startMenu.visible = true;
+        this._app.stage.addChild(this._startMenu);
+        this._app.stage.removeChild(this._gameWorld);
+    }
 
     showPointsMenu() {}
 

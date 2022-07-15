@@ -20,7 +20,7 @@ export default class Letter {
     angularMomentum: number = 0;
 
     constructor(letter: string, container?: Container, tint?: number) {
-        this.bt = new BitmapText(letter, { fontName: "Cooper Black", fontSize: 180 });
+        this.bt = new BitmapText(letter, { fontName: "ETH_B_gofa", fontSize: 180 });
         this.bt.visible = true;
         this.bt.interactive = false;
         this.bt.anchor.x = this.bt.anchor.y = 0.5;
