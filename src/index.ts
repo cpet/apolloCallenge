@@ -23,7 +23,6 @@ window.onload = async (): Promise<void> => {
 
     game = new LettersGame(app);
     game.resize(app.screen.width, app.screen.height);
-    game.startGame();
 };
 
 async function loadGameAssets(): Promise<void> {

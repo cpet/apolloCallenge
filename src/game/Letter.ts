@@ -1,4 +1,6 @@
 import { BitmapText, Container, Point } from "pixi.js";
+import { gsap } from "gsap";
+import { LOGICAL_GAME_SPACE } from "./LettersGame";
 
 /**
  * Class to encapsulate data and functionality needed for a game letter.
@@ -9,7 +11,6 @@ export default class Letter {
 
     private _tint!: number;
 
-    private _isMatched: boolean = false;
     private _container!: Container | null | undefined;
     private _keyCode: string;
 
@@ -29,7 +30,7 @@ export default class Letter {
 
         if (container) this.addToContainer(container);
 
-        this.tint = tint || LetterTints.regular;
+        this.tint = tint || LetterTints.normal;
 
         //// Physics.
         this.vel = new Point();
@@ -44,6 +45,30 @@ export default class Letter {
         this.vel.y += this.acc.y * dt;
 
         this.bt.rotation += this.angularMomentum * dt;
+
+        if (this.bt.x < LOGICAL_GAME_SPACE.leftBound) {
+            this.bt.x = LOGICAL_GAME_SPACE.leftBound;
+            this.vel.x = Math.abs(this.vel.x);
+        } else if (this.bt.x > LOGICAL_GAME_SPACE.rightBound) {
+            this.bt.x = LOGICAL_GAME_SPACE.rightBound;
+            this.vel.x = -Math.abs(this.vel.x);
+        }
+    }
+
+    doMatchedAnimation() {
+        this.setVelAndAcc();
+        this.bt.alpha = 1;
+        this.bt.scale.x = this.bt.scale.y = 1;
+        gsap.to(this.bt, {
+            duration: 1,
+            alpha: 0.01,
+            onComplete: this.reset.bind(this),
+        });
+        gsap.to(this.bt.scale, {
+            duration: 1,
+            x: 1.5,
+            y: 1.5,
+        });
     }
 
     //// HELPERS.
@@ -63,17 +88,30 @@ export default class Letter {
     }
 
     reset() {
-        // Sets all to 0.
+        // Sets vel and acc to 0.
         this.setVelAndAcc();
+
         this.bt.rotation = 0;
+        this.bt.alpha = 1;
+        this.bt.scale.x = this.bt.scale.y = 1;
+        this.bt.visible = true;
+
         this.points = 1;
-        this.tint = LetterTints.regular;
+        this.tint = LetterTints.normal;
+        this.removeFromParent();
+
+        gsap.killTweensOf(this.bt);
+        gsap.killTweensOf(this.bt.scale);
+    }
+
+    hide() {
+        this.bt.visible = false;
     }
 
     //// IS?
 
     isRegular(): boolean {
-        return this._tint === LetterTints.regular;
+        return this._tint === LetterTints.normal;
     }
 
     isGolden(): boolean {
@@ -104,6 +142,10 @@ export default class Letter {
         this.bt.tint = this._tint;
     }
 
+    getType(): LetterTypes {
+        return this._tint == LetterTints.normal ? LetterTypes.normal : LetterTypes.gold;
+    }
+
     setXY(x: number, y: number) {
         if (!this.bt) return;
 
@@ -122,12 +164,12 @@ export default class Letter {
     }
 }
 
-// export enum LetterTypes {
-//     regular,
-//     gold
-// }
+export enum LetterTypes {
+    normal,
+    gold,
+}
 
 export const LetterTints = {
-    regular: 0x141a52,
+    normal: 0x202fba,
     gold: 0xd9aa11,
 };
