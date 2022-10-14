@@ -29,7 +29,7 @@
         "gsap": "^3.10.4",
         "pixi.js": "^6.2.2",
         "pixi.js-keyboard": "^1.1.6",
-        "regenerator-runtime": "^0.13.9"
+        "regenerator-runtime": "^0.13.10"
     },
     "devDependencies": {
         "@swc/core": "^1.2.135",
